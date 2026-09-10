@@ -1,67 +1,50 @@
-# sla_cadastro.py
-Este script em Python automatiza o processamento de indicadores de performance (SLA - Service Level Agreement) a partir de dados extraídos de um sistema CRM. Ele foi desenvolvido para facilitar a análise de eficiência no processo de faturamento e cadastro de notas fiscais
+# SLA de Cadastro
 
-import pandas as pd
-import numpy as np
-import os
+Projeto em Python para cálculo e organização de indicadores de SLA (Service Level Agreement) a partir de uma base tratada de dados.
 
-# --- CONFIGURAÇÕES DE CAMINHO ---
-ARQUIVO_BASE = r"data\input\crm_limpeza_final.xlsx"
-ARQUIVO_FINAL = r"data\output\Base_geral_cadastro.xlsx"
+## Objetivo
 
-def calcular_sla_geral():
-    try:
-        if not os.path.exists(ARQUIVO_BASE):
-            print(f"❌ ERRO: A base 'crm_limpeza_final' não foi encontrada.")
-            return
+Automatizar o cálculo do tempo entre a emissão e a finalização de cada registro, classificando o atendimento conforme uma meta de SLA e gerando uma nova base pronta para análise em ferramentas de Business Intelligence.
 
-        print("1. Lendo a base limpa...")
-        df = pd.read_excel(ARQUIVO_BASE)
+## O que o projeto faz
 
-        # --- CONVERSÃO DE DATAS ---
-        # Como as datas já estão no formato DD/MM/AAAA HH:MM:SS, vamos converter para cálculo
-        df['dt_emissao'] = pd.to_datetime(df['Data Emissão'], dayfirst=True, errors='coerce')
-        df['dt_finaliza'] = pd.to_datetime(df['Data finalização'], dayfirst=True, errors='coerce')
+O script:
 
-        # --- CÁLCULO DO SLA ---
-        # Diferença em horas totais
-        df['diff_horas'] = (df['dt_finaliza'] - df['dt_emissao']).dt.total_seconds() / 3600
+- lê uma base tratada em Excel;
+- converte as datas de emissão e finalização;
+- calcula o tempo total entre os eventos;
+- classifica os registros conforme a meta de SLA;
+- gera o tempo decorrido em formato de dias e horas;
+- calcula o SLA em dias para análises e médias;
+- gera uma nova planilha pronta para uso em BI.
 
-        # 1. Status Meta (48 Horas Corridas)
-        def definir_status(h):
-            if pd.isna(h): return "SEM DATA"
-            return "DENTRO DA META" if h <= 48 else "ATRASADO"
-        
-        df['Status SLA'] = df['diff_horas'].apply(definir_status)
+## Regra de SLA
 
-        # 2. Tempo Formatado (Ex: 1d 4h)
-        def formatar_tempo(h):
-            if pd.isna(h): return "N/A"
-            dias = int(h // 24)
-            horas_restantes = int(h % 24)
-            return f"{dias}d {horas_restantes}h"
+Neste projeto, a meta utilizada é de:
 
-        df['Tempo Total'] = df['diff_horas'].apply(formatar_tempo)
+**48 horas corridas**
 
-        # 3. SLA em Dias (Decimal para o BI fazer média)
-        df['SLA Dias'] = (df['diff_horas'] / 24).round(2)
+Os registros são classificados como:
 
-        # --- ORGANIZAÇÃO FINAL ---
-        # Mantemos as colunas originais e adicionamos as de performance
-        colunas_bi = [
-            'Data Emissão', 'Marca', 'N° NF', 'Volume', 'Valor NF', 
-            'Tipo NF', 'Responsável', 'Data finalização', 
-            'Tempo Total', 'Status SLA', 'SLA Dias'
-        ]
+- `DENTRO DA META`
+- `ATRASADO`
+- `SEM DATA`
 
-        print("2. Gerando Base Geral de Cadastro...")
-        df[colunas_bi].to_excel(ARQUIVO_FINAL, index=False)
-        
-        print(f"✅ SUCESSO! Planilha 'Base_geral_cadastro' criada.")
-        os.startfile(os.path.dirname(ARQUIVO_FINAL))
+## Tecnologias utilizadas
 
-    except Exception as e:
-        print(f"❌ Erro ao calcular SLA: {e}")
+- Python
+- Pandas
+- OpenPyXL
 
-if __name__ == "__main__":
-    calcular_sla_geral()
+## Estrutura do projeto
+
+```text
+sla_cadastro.py/
+├── src/
+│   └── sla_cadastro.py
+├── data/
+│   ├── input/
+│   └── output/
+├── .gitignore
+├── README.md
+└── requirements.txt
