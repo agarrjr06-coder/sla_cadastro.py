@@ -6,8 +6,8 @@ import numpy as np
 import os
 
 # --- CONFIGURAÇÕES DE CAMINHO ---
-ARQUIVO_BASE = r"C:\Users\atend\OneDrive\Desktop\CProjetos_BI\crm_limpeza_final.xlsx"
-ARQUIVO_FINAL = r"C:\Users\atend\OneDrive\Desktop\CProjetos_BI\Base_geral_cadastro.xlsx"
+ARQUIVO_BASE = r"data\input\crm_limpeza_final.xlsx"
+ARQUIVO_FINAL = r"data\output\Base_geral_cadastro.xlsx"
 
 def calcular_sla_geral():
     try:
