@@ -1,0 +1,18 @@
+# Dados locais
+/data/input/*
+/data/output/*
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Ambientes virtuais
+.venv/
+venv/
+
+# Editor
+.vscode/
+
+# Arquivos do sistema
+.DS_Store
+Thumbs.db
