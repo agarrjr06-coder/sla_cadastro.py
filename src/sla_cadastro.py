@@ -1,8 +1,8 @@
 """Cálculo de indicadores de SLA a partir de uma base tratada.
 
 O script lê uma planilha com datas de emissão e finalização,
-calcula o tempo decorrido entre os eventos e gera uma nova
-planilha pronta para análise em BI.
+calcula o tempo decorrido entre os eventos, valida inconsistências
+de datas e gera uma nova planilha pronta para análise em BI.
 """
 
 from pathlib import Path
@@ -14,6 +14,25 @@ INPUT_FILE = Path("data/input/crm_limpeza_final.xlsx")
 OUTPUT_FILE = Path("data/output/base_geral_cadastro.xlsx")
 
 SLA_LIMIT_HOURS = 48
+REQUIRED_COLUMNS = {
+    "Data Emissão",
+    "Marca",
+    "N° NF",
+    "Volume",
+    "Valor NF",
+    "Tipo NF",
+    "Responsável",
+    "Data finalização",
+}
+
+
+def validate_columns(df: pd.DataFrame) -> None:
+    """Valida se a base possui todas as colunas necessárias."""
+
+    missing = REQUIRED_COLUMNS.difference(df.columns)
+    if missing:
+        missing_list = ", ".join(sorted(missing))
+        raise ValueError(f"Colunas obrigatórias ausentes: {missing_list}")
 
 
 def calculate_sla_hours(df: pd.DataFrame) -> pd.DataFrame:
@@ -46,6 +65,9 @@ def define_status(hours: float) -> str:
     if pd.isna(hours):
         return "SEM DATA"
 
+    if hours < 0:
+        return "DATA INCONSISTENTE"
+
     if hours <= SLA_LIMIT_HOURS:
         return "DENTRO DA META"
 
@@ -58,10 +80,14 @@ def format_time(hours: float) -> str:
     if pd.isna(hours):
         return "N/A"
 
-    days = int(hours // 24)
-    remaining_hours = int(hours % 24)
+    if hours < 0:
+        return "DATA INCONSISTENTE"
 
-    return f"{days}d {remaining_hours}h"
+    total_minutes = int(round(hours * 60))
+    days, remainder = divmod(total_minutes, 24 * 60)
+    remaining_hours, minutes = divmod(remainder, 60)
+
+    return f"{days}d {remaining_hours}h {minutes}min"
 
 
 def process_sla(
@@ -76,14 +102,15 @@ def process_sla(
         )
 
     print("1. Lendo a base tratada...")
-
     df = pd.read_excel(input_file)
 
+    validate_columns(df)
     df = calculate_sla_hours(df)
 
     df["Status SLA"] = df["diff_horas"].apply(define_status)
     df["Tempo Total"] = df["diff_horas"].apply(format_time)
     df["SLA Dias"] = (df["diff_horas"] / 24).round(2)
+    df.loc[df["diff_horas"] < 0, "SLA Dias"] = pd.NA
 
     final_columns = [
         "Data Emissão",
